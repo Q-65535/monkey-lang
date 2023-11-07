@@ -21,7 +21,7 @@ const (
 	GT = ">"
 
 	EQ    = "=="
-	NOTEQ = "!="
+	NOT_EQ = "!="
 
 	// delimiters
 	COMMA     = ","

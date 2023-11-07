@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"os"
 	"monkey/lexer"
-	"monkey/token"
+	// "monkey/token"
+	"monkey/parser"
 )
 
 const PROMPT = "> "
@@ -19,9 +21,17 @@ func Start (in io.Reader, out io.Writer) {
 			return
 		}
 		line := scanner.Text()
-		l :=lexer.New(line)
-		for tok := l.NextToken(); tok.Type != token.EOF; tok = l.NextToken() {
-			fmt.Printf("%+v\n", tok)
+		if line == "quit" || line == "exit" {
+			os.Exit(0)
 		}
+		l :=lexer.New(line)
+		p := parser.New(l)
+		prog := p.ParseProgram()
+		io.WriteString(out, prog.String())
+		io.WriteString(out, "\n")
+		// fmt.Printf("%+v\n", prog)
+		// for tok := l.NextToken(); tok.Type != token.EOF; tok = l.NextToken() {
+		// 	fmt.Printf("%+v\n", tok)
+		// }
 	}
 }
