@@ -3,19 +3,19 @@ package main
 import (
 	"fmt"
 	"monkey/lexer"
-	"monkey/token"
 	"monkey/repl"
+	"monkey/token"
 	"os"
 	// "os/user"
 )
 
 func main() {
-	l := lexer.New("hello+world;")
+	l := lexer.New("let a = 7;")
 	tok := l.NextToken()
 	for tok.Type != token.EOF {
 		fmt.Printf("%+v\n", tok)
 		tok = l.NextToken()
 	}
-	fmt.Printf("hello world!\n")
+	fmt.Printf("start repl...!\n")
 	repl.Start(os.Stdin, os.Stdout)
 }
