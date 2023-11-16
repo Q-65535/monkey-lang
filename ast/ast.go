@@ -105,6 +105,55 @@ func (rs *ReturnStatement) String() string {
 	return out.String()
 }
 
+type IfExpression struct {
+	Token       token.Token
+	Condition   Expression
+	Consequence *BlockStatement
+	Altenative  *BlockStatement
+}
+
+func (is *IfExpression) expressionNode()      {}
+func (is *IfExpression) TokenLiteral() string { return is.Token.Literal }
+func (is *IfExpression) String() string {
+	var out bytes.Buffer
+	out.WriteString(is.TokenLiteral())
+	out.WriteString("(")
+	out.WriteString(is.Condition.String())
+	out.WriteString(")")
+	out.WriteString("\n")
+	if is.Consequence != nil {
+		out.WriteString("Consequence:\n")
+		out.WriteString(is.Consequence.String())
+	}
+	if is.Altenative != nil {
+		out.WriteString("else:\n")
+		out.WriteString(is.Altenative.String())
+	}
+	return out.String()
+}
+
+type BlockStatement struct {
+	Statements []Statement
+}
+
+func (b *BlockStatement) expressionNode() {}
+func (b *BlockStatement) TokenLiteral() string {
+	if len(b.Statements) > 0 {
+		return b.Statements[0].TokenLiteral()
+	} else {
+		return ""
+	}
+}
+
+func (b *BlockStatement) String() string {
+	var out bytes.Buffer
+
+	for _, s := range b.Statements {
+		out.WriteString(s.String() + "\n")
+	}
+	return out.String()
+}
+
 type IntegerLiteral struct {
 	Token token.Token
 	Value int64
@@ -113,6 +162,61 @@ type IntegerLiteral struct {
 func (il *IntegerLiteral) expressionNode()      {}
 func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Literal }
 func (il *IntegerLiteral) String() string       { return il.Token.Literal }
+
+type BooleanLiteral struct {
+	Token token.Token
+	Value bool
+}
+
+func (bl *BooleanLiteral) expressionNode()      {}
+func (bl *BooleanLiteral) TokenLiteral() string { return bl.Token.Literal }
+func (bl *BooleanLiteral) String() string       { return (bl.Token.Literal + "(tok)") }
+
+type FunctionLiteral struct {
+	Token      token.Token // the fn token
+	Parameters []*Identifier
+	Body       *BlockStatement
+}
+
+func (fl *FunctionLiteral) expressionNode()      {}
+func (fl *FunctionLiteral) TokenLiteral() string { return fl.Token.Literal }
+func (fl *FunctionLiteral) String() string {
+	var out bytes.Buffer
+	out.WriteString(fl.TokenLiteral())
+	out.WriteString("(")
+	for _, par := range fl.Parameters {
+		out.WriteString(par.Value + ",")
+	}
+	// out.WriteString(fl.Condition.String())
+	out.WriteString(")")
+	out.WriteString("\n")
+	if fl.Body != nil {
+		out.WriteString("Body:\n")
+		out.WriteString(fl.Body.String())
+	}
+	return out.String()
+}
+
+type CallExpression struct {
+	Token     token.Token // '(' token
+	Function  Expression
+	Arguments []Expression
+}
+
+func (c *CallExpression) expressionNode()      {}
+func (c *CallExpression) TokenLiteral() string { return c.Token.Literal }
+func (c *CallExpression) String() string {
+	var out bytes.Buffer
+	out.WriteString(c.Function.String())
+	out.WriteString("(")
+	for _, arg := range c.Arguments {
+		out.WriteString(arg.String())
+		// @Cleanup: this causes extra comma at the end
+		out.WriteString(",")
+	}
+	out.WriteString(")")
+	return out.String()
+}
 
 type PrefixExpression struct {
 	Token    token.Token // the prefix token
