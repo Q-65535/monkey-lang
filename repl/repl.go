@@ -26,6 +26,10 @@ func Start(in io.Reader, out io.Writer) {
 		l := lexer.New(line)
 		p := parser.New(l)
 		prog := p.ParseProgram()
+		// print error messages
+		for _, err := range p.Errors() {
+			fmt.Printf(err)
+		}
 		io.WriteString(out, prog.String())
 		io.WriteString(out, "\n")
 	}

@@ -80,6 +80,10 @@ func New(l *lexer.Lexer) *Parser {
 	return p
 }
 
+func (p *Parser) Errors() []string {
+	return p.errors
+}
+
 func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
 	p.prefixParseFns[tokenType] = fn
 }
@@ -134,10 +138,6 @@ func (p *Parser) ParseProgram() *ast.Program {
 			program.Statements = append(program.Statements, stmt)
 		}
 		p.nextToken()
-	}
-	// print error messages
-	for _, err := range p.errors {
-		fmt.Printf(err)
 	}
 	return program
 }
