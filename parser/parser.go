@@ -62,6 +62,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.LPAREN, p.parseLParen)
 	p.registerPrefix(token.BANG, p.parsePrefixExpression)
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
+	p.registerPrefix(token.STRING, p.parseStringLiteral)
 
 	// register infix parsing functions
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
@@ -255,6 +256,7 @@ func (p *Parser) parseFunctionParameters() []*ast.Identifier {
 func (p *Parser) parseLbrace() *ast.BlockStatement {
 	block := &ast.BlockStatement{}
 	block.Statements = []ast.Statement{}
+	p.nextToken()
 	for !p.curTokenIs(token.RBRACE) {
 		stmt := p.parseStatement()
 		if stmt != nil {
@@ -298,7 +300,7 @@ func (p *Parser) parseCallArguments() []ast.Expression {
 		arg = p.parseExpression(LOWEST)
 		args = append(args, arg)
 	}
-	if !p.peekTokenIs(token.RPAREN) {
+	if !p.expectPeek(token.RPAREN) {
 		msg := fmt.Sprintf("parsing call error: the token after arguments is not ')' but: %s", p.peekToken)
 		p.errors = append(p.errors, msg)
 		return nil
@@ -308,6 +310,7 @@ func (p *Parser) parseCallArguments() []ast.Expression {
 
 func (p *Parser) parseExpression(precedence int) ast.Expression {
 	prefix := p.prefixParseFns[p.curToken.Type]
+	// @TODO: provide error info
 	if prefix == nil {
 		return nil
 	}
@@ -365,6 +368,10 @@ func (p *Parser) parseBooleanLiteral() ast.Expression {
 	}
 	lit.Value = val
 	return lit
+}
+
+func (p *Parser) parseStringLiteral() ast.Expression {
+	return &ast.StringLiteral{Token: p.curToken, Value: p.curToken.Literal}
 }
 
 // @Problem: the function name is really confusing, parsePrefixExpression is one of a group of functions

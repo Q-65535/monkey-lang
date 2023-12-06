@@ -172,6 +172,15 @@ func (bl *BooleanLiteral) expressionNode()      {}
 func (bl *BooleanLiteral) TokenLiteral() string { return bl.Token.Literal }
 func (bl *BooleanLiteral) String() string       { return (bl.Token.Literal + "(tok)") }
 
+type StringLiteral struct {
+	Token token.Token
+	Value string
+}
+
+func (str *StringLiteral) expressionNode()      {}
+func (str *StringLiteral) TokenLiteral() string { return str.Token.Literal }
+func (str *StringLiteral) String() string       { return (str.Token.Literal + "(tok)") }
+
 type FunctionLiteral struct {
 	Token      token.Token // the fn token
 	Parameters []*Identifier
