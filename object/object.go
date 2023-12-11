@@ -19,6 +19,7 @@ const (
 	FUNCTION_OBJ     = "FUNCTION"
 	STRING_OBJ       = "STRING"
 	BUILTIN_OBJ      = "BUILTIN"
+	ARRAY_OBJ        = "ARRAY"
 )
 
 type Environment struct {
@@ -144,6 +145,24 @@ func (s *String) Type() ObjectType {
 }
 func (s *String) Inspect() string {
 	return s.Value
+}
+
+type Array struct {
+	Value []Object
+}
+
+func (a *Array) Type() ObjectType {
+	return ARRAY_OBJ
+}
+func (a *Array) Inspect() string {
+	var out bytes.Buffer
+	out.WriteString("[")
+	for _, element := range a.Value {
+		out.WriteString(element.Inspect())
+		out.WriteString(", ")
+	}
+	out.WriteString("]")
+	return out.String()
 }
 
 type Builtin struct {

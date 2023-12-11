@@ -15,6 +15,9 @@ func builtinLen(args ...object.Object) object.Object {
 		return &object.Integer{Value: 32}
 	case *object.String:
 		return &object.Integer{Value: int64(len(obj.Value))}
+	case *object.Array:
+		length := len(obj.Value)
+		return &object.Integer{Value: int64(length)}
 	default:
 		return newError("len (currently) doesn't support %s type", obj.Type())
 	}

@@ -227,6 +227,41 @@ func (c *CallExpression) String() string {
 	return out.String()
 }
 
+type ArrayLiteral struct {
+	Token    token.Token // '[' token
+	Elements []Expression
+}
+
+func (arr *ArrayLiteral) expressionNode()      {}
+func (arr *ArrayLiteral) TokenLiteral() string { return arr.Token.Literal }
+func (arr *ArrayLiteral) String() string {
+	var out bytes.Buffer
+	out.WriteString("[")
+	for _, exp := range arr.Elements {
+		out.WriteString(exp.String())
+		out.WriteString(", ")
+	}
+	out.WriteString("]")
+	return out.String()
+}
+
+type ArrayAccessExpression struct {
+	Token token.Token // '[' token
+	Array Expression
+	Index Expression
+}
+
+func (ac *ArrayAccessExpression) expressionNode()      {}
+func (ac *ArrayAccessExpression) TokenLiteral() string { return ac.Token.Literal }
+func (ac *ArrayAccessExpression) String() string {
+	var out bytes.Buffer
+	out.WriteString(ac.Array.String())
+	out.WriteString("[")
+	out.WriteString(ac.Index.String())
+	out.WriteString("]")
+	return out.String()
+}
+
 type PrefixExpression struct {
 	Token    token.Token // the prefix token
 	Operator string      // retrived from Token

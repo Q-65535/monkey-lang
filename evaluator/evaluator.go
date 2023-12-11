@@ -55,6 +55,10 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return &object.Function{Parameters: node.Parameters, Body: node.Body, Env: env}
 	case *ast.CallExpression:
 		return evalCallExpression(node, env)
+	case *ast.ArrayLiteral:
+		return evalArrayLiteral(node, env)
+	case *ast.ArrayAccessExpression:
+		return evalArrayAccessExpression(node, env)
 	default:
 		return NULL
 	}
@@ -102,6 +106,15 @@ func evalCallExpression(call *ast.CallExpression, env *object.Environment) objec
 	}
 }
 
+func evalArrayLiteral(arrayLiteral *ast.ArrayLiteral, env *object.Environment) object.Object {
+	objectElements := []object.Object{}
+	for _, exp := range arrayLiteral.Elements {
+		obj := Eval(exp, env)
+		objectElements = append(objectElements, obj)
+	}
+	return &object.Array{Value: objectElements}
+}
+
 func evalArgs(exps []ast.Expression, env *object.Environment) []object.Object {
 	args := []object.Object{}
 	for _, exp := range exps {
@@ -112,6 +125,18 @@ func evalArgs(exps []ast.Expression, env *object.Environment) []object.Object {
 		args = append(args, Eval(exp, env))
 	}
 	return args
+}
+
+func evalArrayAccessExpression(ac *ast.ArrayAccessExpression, env *object.Environment) object.Object {
+	tempArrayObj := Eval(ac.Array, env)
+	tempIndexObj := Eval(ac.Index, env)
+
+	if tempArrayObj.Type() == object.ARRAY_OBJ && tempIndexObj.Type() == object.INTEGER_OBJ {
+		arrayObj, _ := tempArrayObj.(*object.Array)
+		indexObj, _ := tempIndexObj.(*object.Integer)
+		return arrayObj.Value[indexObj.Value]
+	}
+	return newError("eval array access error: array object type: %s, index object type: %s", tempArrayObj.Type(), tempIndexObj.Type())
 }
 
 // @TODO: block statement should also be evaluated in a closure

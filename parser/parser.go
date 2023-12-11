@@ -17,6 +17,7 @@ const (
 	PRODUCT
 	PREFIX
 	CALL
+	ARRAYACCESS
 )
 
 var precedences = map[token.TokenType]int{
@@ -29,6 +30,7 @@ var precedences = map[token.TokenType]int{
 	token.SLASH:    PRODUCT,
 	token.ASTERISK: PRODUCT,
 	token.LPAREN:   CALL,
+	token.LBRACKET: ARRAYACCESS,
 }
 
 type (
@@ -63,6 +65,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.BANG, p.parsePrefixExpression)
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
 	p.registerPrefix(token.STRING, p.parseStringLiteral)
+	p.registerPrefix(token.LBRACKET, p.parseArrayLiteral)
 
 	// register infix parsing functions
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
@@ -75,6 +78,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.SLASH, p.parseInfixExpression)
 	p.registerInfix(token.ASTERISK, p.parseInfixExpression)
 	p.registerInfix(token.LPAREN, p.parseCallExpression)
+	p.registerInfix(token.LBRACKET, p.parseArrayAccessExpression)
 
 	p.nextToken()
 	p.nextToken()
@@ -83,6 +87,10 @@ func New(l *lexer.Lexer) *Parser {
 
 func (p *Parser) Errors() []string {
 	return p.errors
+}
+
+func (p *Parser) addError(format string, a ...interface{}) {
+	p.errors = append(p.errors, fmt.Sprintf(format, a...))
 }
 
 func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
@@ -214,14 +222,12 @@ func (p *Parser) parseIfExpression() ast.Expression {
 func (p *Parser) parseFunctionExpression() ast.Expression {
 	exp := &ast.FunctionLiteral{Token: p.curToken}
 	if !p.expectPeek(token.LPAREN) {
-		msg := fmt.Sprintf("parsing function error: the token after if is not left paren, but: %s", p.peekToken)
-		p.errors = append(p.errors, msg)
+		p.addError("parsing function error: the token after if is not left paren, but: %s\n", p.peekToken)
 		return nil
 	}
 	exp.Parameters = p.parseFunctionParameters()
 	if !p.expectPeek(token.LBRACE) {
-		msg := fmt.Sprintf("parsing function error: the token after function parameter is not '{', but: %s", p.peekToken)
-		p.errors = append(p.errors, msg)
+		p.addError("parsing function error: the token after function parameter is not '{', but: %s\n", p.peekToken)
 		return nil
 	}
 	exp.Body = p.parseLbrace()
@@ -232,6 +238,7 @@ func (p *Parser) parseFunctionParameters() []*ast.Identifier {
 	parameters := []*ast.Identifier{}
 	// no parameters, just return
 	if p.peekTokenIs(token.RPAREN) {
+		p.nextToken()
 		return parameters
 	}
 	// skip '(' token
@@ -288,6 +295,7 @@ func (p *Parser) parseCallExpression(left ast.Expression) ast.Expression {
 func (p *Parser) parseCallArguments() []ast.Expression {
 	args := []ast.Expression{}
 	if p.peekTokenIs(token.RPAREN) {
+		p.nextToken()
 		return args
 	}
 	// skip '(' token
@@ -310,8 +318,8 @@ func (p *Parser) parseCallArguments() []ast.Expression {
 
 func (p *Parser) parseExpression(precedence int) ast.Expression {
 	prefix := p.prefixParseFns[p.curToken.Type]
-	// @TODO: provide error info
 	if prefix == nil {
+		p.addError("no function for parsing token of type %s", p.curToken.Type)
 		return nil
 	}
 	leftExp := prefix()
@@ -333,8 +341,7 @@ func (p *Parser) parseLParen() ast.Expression {
 	p.nextToken()
 	exp := p.parseExpression(LOWEST)
 	if !p.expectPeek(token.RPAREN) {
-		msg := fmt.Sprintf("parsing left paren expession: the token after expression is not ')' but: %s\n", p.peekToken)
-		p.errors = append(p.errors, msg)
+		p.addError("parsing left paren expession: the token after expression is not ')' but: %s\n", p.peekToken)
 		return nil
 	}
 	return exp
@@ -372,6 +379,39 @@ func (p *Parser) parseBooleanLiteral() ast.Expression {
 
 func (p *Parser) parseStringLiteral() ast.Expression {
 	return &ast.StringLiteral{Token: p.curToken, Value: p.curToken.Literal}
+}
+
+func (p *Parser) parseArrayLiteral() ast.Expression {
+	arr := &ast.ArrayLiteral{Token: p.curToken, Elements: []ast.Expression{}}
+	// empty array
+	if p.peekTokenIs(token.RBRACKET) {
+		p.nextToken()
+		return arr
+	}
+	// skip '[' token
+	p.nextToken()
+	arr.Elements = append(arr.Elements, p.parseExpression(LOWEST))
+	for p.peekTokenIs(token.COMMA) {
+		p.nextToken()
+		p.nextToken()
+		arr.Elements = append(arr.Elements, p.parseExpression(LOWEST))
+	}
+	if !p.expectPeek(token.RBRACKET) {
+		p.addError("parsing array literal error, expect ] as the end of exrepssion, but got %s\n", p.peekToken)
+	}
+	return arr
+}
+
+func (p *Parser) parseArrayAccessExpression(left ast.Expression) ast.Expression {
+	ac := &ast.ArrayAccessExpression{Token: p.curToken, Array: left}
+	if !p.expectPeek(token.INT) {
+		p.addError("parsing array access error, expect integer as index, but got %s\n", p.peekToken)
+	}
+	ac.Index = p.parseIntegerLiteral()
+	if !p.expectPeek(token.RBRACKET) {
+		p.addError("parsing array access error, expect ] as the end of expression, but got %s\n", p.peekToken)
+	}
+	return ac
 }
 
 // @Problem: the function name is really confusing, parsePrefixExpression is one of a group of functions
