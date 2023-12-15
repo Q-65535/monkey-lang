@@ -10,12 +10,12 @@ const (
 )
 
 type Definition struct {
-	Name         string
-	OperandWidth []int
+	Name          string
+	OperandWidths []int
 }
 
 var definitions = map[Opcode]*Definition{
-	Opconst: &Definition{Name: "opConstant", OperandWidth: []int{2}},
+	Opconst: {Name: "opConstant", OperandWidths: []int{2}},
 }
 
 func Make(oc Opcode, oprands ...int) []byte {
@@ -27,7 +27,7 @@ func Make(oc Opcode, oprands ...int) []byte {
 	var instruction []byte
 	instruction = append(instruction, byte(oc))
 	for i, or := range oprands {
-		width := def.OperandWidth[i]
+		width := def.OperandWidths[i]
 		instruction = append(instruction, filterByte(or, width)...)
 	}
 	return instruction
@@ -45,7 +45,7 @@ func filterByte(target int, byteCount int) []byte {
 func Lookup(oc Opcode) (*Definition, error) {
 	def, ok := definitions[oc]
 	if !ok {
-		return nil, fmt.Errorf("opcode %d not defined!\n", oc)
+		return nil, fmt.Errorf("opcode %d not defined", oc)
 	}
 	return def, nil
 }

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"monkey/code"
 	"monkey/evaluator"
 	"monkey/lexer"
 	"monkey/object"
@@ -16,6 +17,10 @@ const PROMPT = "> "
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
 	env := object.NewEnvironment()
+	instruction := code.Make(code.Opconst, 65534)
+	for i, b := range instruction {
+		fmt.Printf("%dth byte: %x\n", i, b)
+	}
 	for true {
 		fmt.Printf(PROMPT)
 		scanned := scanner.Scan()
