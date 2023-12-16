@@ -1,6 +1,9 @@
 package code
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Instructions []byte
 type Opcode byte
@@ -12,6 +15,32 @@ const (
 type Definition struct {
 	Name          string
 	OperandWidths []int
+}
+
+func (instructions Instructions) String() string {
+	var out strings.Builder
+	index := 0
+	for index < len(instructions) {
+		bt := instructions[index]
+		def := definitions[Opcode(bt)]
+		out.WriteString(fmt.Sprintf("0x%04x", index))
+		index++
+		out.WriteString(" ")
+		out.WriteString(def.Name)
+		for _, width := range def.OperandWidths {
+			for i := 0; i < width; i++ {
+				out.WriteString(" ")
+				out.WriteString(fmt.Sprintf("0x%02x", instructions[index]))
+				index++
+			}
+			// oprand separator
+			out.WriteString("|")
+		}
+		// instruction separator
+		out.WriteString("\n")
+		fmt.Printf("ssssssssss\nssssss\nsssssss\nssssss\n")
+	}
+	return out.String()
 }
 
 var definitions = map[Opcode]*Definition{
