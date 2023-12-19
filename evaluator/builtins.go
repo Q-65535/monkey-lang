@@ -3,7 +3,7 @@ package evaluator
 import "monkey/object"
 
 var builtinFuns = map[string]*object.Builtin{
-	"len": &object.Builtin{Fn: builtinLen},
+	"len": {Fn: builtinLen},
 }
 
 func builtinLen(args ...object.Object) object.Object {
