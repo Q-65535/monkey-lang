@@ -43,7 +43,8 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 	case *ast.IntegerLiteral:
 		integer := &object.Integer{Value: node.Value}
-		c.emit(code.Opconst, c.addConstant(integer))
+		integer_index := c.addConstant(integer)
+		c.emit(code.Opconst, integer_index)
 	}
 	return nil
 }
