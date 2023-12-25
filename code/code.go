@@ -62,6 +62,7 @@ func Make(oc Opcode, oprands ...int) []byte {
 	return instruction
 }
 
+// convert an integer to an array of bytes in big endian order
 func filterByte(target int, byteCount int) []byte {
 	var res []byte
 	for i := 0; i < byteCount; i++ {
@@ -77,4 +78,9 @@ func Lookup(oc Opcode) (*Definition, error) {
 		return nil, fmt.Errorf("opcode %d not defined", oc)
 	}
 	return def, nil
+}
+
+func ReadUint16(bytes []byte) uint16 {
+	val := uint16(bytes[0])<<8 | uint16(bytes[1])
+	return val
 }
