@@ -29,7 +29,7 @@ func testIntegerObject(expected int64, actual object.Object) error {
 
 type vmTestCase struct {
 	input    string
-	expected interface{}
+	expected any
 }
 
 func runVmTests(t *testing.T, tests []vmTestCase) {
@@ -53,7 +53,7 @@ func runVmTests(t *testing.T, tests []vmTestCase) {
 	}
 }
 
-func testExpectedObject(t *testing.T, expected interface{}, actual object.Object) {
+func testExpectedObject(t *testing.T, expected any, actual object.Object) {
 	t.Helper()
 	switch expected := expected.(type) {
 	case int:
@@ -68,7 +68,7 @@ func TestIntegerArithmetic(t *testing.T) {
 	tests := []vmTestCase{
 		{"1", 1},
 		{"2", 2},
-		{"1 + 2", 2}, // @fix: 1+2=3
+		{"1 + 2", 3},
 	}
 	runVmTests(t, tests)
 }

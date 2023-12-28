@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"io"
 	"monkey/code"
-	"monkey/evaluator"
+	"monkey/compiler"
 	"monkey/lexer"
-	"monkey/object"
 	"monkey/parser"
+	"monkey/vm"
 	"os"
 )
 
@@ -16,7 +16,6 @@ const PROMPT = "> "
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
-	env := object.NewEnvironment()
 	instruction := code.Make(code.Opconst, 65534)
 	for i, b := range instruction {
 		fmt.Printf("%dth byte: %x\n", i, b)
@@ -34,12 +33,16 @@ func Start(in io.Reader, out io.Writer) {
 		l := lexer.New(line)
 		p := parser.New(l)
 		prog := p.ParseProgram()
-		res := evaluator.Eval(prog, env)
+		comp := compiler.New()
+		comp.Compile(prog)
+		v := vm.New(comp.Bytecode())
+		v.Run()
+
 		// print error messages
 		for _, err := range p.Errors() {
 			fmt.Printf(err)
 		}
-		io.WriteString(out, res.Inspect())
+		io.WriteString(out, v.StackTop().Inspect())
 		io.WriteString(out, "\n")
 	}
 }

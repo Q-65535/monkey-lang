@@ -4,11 +4,11 @@ import "testing"
 
 func TestInstructionsString(t *testing.T) {
 	instructions := []Instructions{
-		Make(Opconst, 1),
+		Make(OpAdd),
 		Make(Opconst, 2),
-		Make(Opconst, 65535),
+		Make(Opconst, 65534),
 	}
-	expected := "0000 OpConstant 1\n 0003 OpConstant 2\n 0006 OpConstant 65535\n"
+	expected := "0x0000 OpAdd\n0x0001 OpConstant 2\n0x0004 OpConstant 65534\n"
 
 	concatted := Instructions{}
 	for _, ins := range instructions {
