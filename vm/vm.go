@@ -14,6 +14,7 @@ type VM struct {
 	instructions code.Instructions
 	stack        []object.Object
 	sp           int
+	lastPopped   object.Object
 }
 
 func New(bytecode *compiler.Bytecode) *VM {
@@ -53,6 +54,8 @@ func (vm *VM) Run() error {
 			left := vm.pop()
 			res := left.(*object.Integer).Value + right.(*object.Integer).Value
 			vm.push(&object.Integer{Value: res})
+		case code.OpPop:
+			vm.pop()
 		}
 	}
 	return nil
@@ -69,6 +72,12 @@ func (vm *VM) push(obj object.Object) error {
 
 func (vm *VM) pop() object.Object {
 	obj := vm.StackTop()
+	vm.stack[vm.sp-1] = nil
+	vm.lastPopped = obj
 	vm.sp--
 	return obj
+}
+
+func (vm *VM) LastPopped() object.Object {
+	return vm.lastPopped
 }

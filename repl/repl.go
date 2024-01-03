@@ -42,7 +42,7 @@ func Start(in io.Reader, out io.Writer) {
 		for _, err := range p.Errors() {
 			fmt.Printf(err)
 		}
-		io.WriteString(out, v.StackTop().Inspect())
+		io.WriteString(out, v.LastPopped().Inspect())
 		io.WriteString(out, "\n")
 	}
 }

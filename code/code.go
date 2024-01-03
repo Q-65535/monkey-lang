@@ -11,6 +11,7 @@ type Opcode byte
 const (
 	Opconst Opcode = iota
 	OpAdd
+	OpPop
 )
 
 type Definition struct {
@@ -39,14 +40,14 @@ func (instructions Instructions) String() string {
 		}
 		// instruction separator
 		out.WriteString("\n")
-		// fmt.Printf("ssssssssss\nssssss\nsssssss\nssssss\n")
 	}
 	return out.String()
 }
 
 var definitions = map[Opcode]*Definition{
 	Opconst: {Name: "opConstant", OperandWidths: []int{2}},
-	OpAdd: {"OpAdd", []int{}},
+	OpAdd:   {"OpAdd", []int{}},
+	OpPop:   {"OpPop", []int{}},
 }
 
 func Make(oc Opcode, oprands ...int) []byte {

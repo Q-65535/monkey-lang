@@ -1,10 +1,10 @@
 package compiler
 
 import (
+	"fmt"
 	"monkey/ast"
 	"monkey/code"
 	"monkey/object"
-	"fmt"
 )
 
 type Compiler struct {
@@ -30,6 +30,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 	case *ast.ExpressionStatement:
 		err := c.Compile(node.Expression)
+		c.emit(code.OpPop)
 		if err != nil {
 			return err
 		}
