@@ -49,13 +49,30 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
-		case code.OpAdd:
+		case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv:
 			right := vm.pop()
 			left := vm.pop()
-			res := left.(*object.Integer).Value + right.(*object.Integer).Value
+			if left.Type() != object.INTEGER_OBJ || right.Type() != object.INTEGER_OBJ {
+				return fmt.Errorf("unsupported types for binary operation: %s %s", left.Type(), right.Type())
+			}
+			leftVal := left.(*object.Integer).Value
+			rightVal := right.(*object.Integer).Value
+			var res int64
+			switch op {
+			case code.OpAdd:
+				res = leftVal + rightVal
+			case code.OpSub:
+				res = leftVal - rightVal
+			case code.OpMul:
+				res = leftVal * rightVal
+			case code.OpDiv:
+				res = leftVal / rightVal
+			}
 			vm.push(&object.Integer{Value: res})
 		case code.OpPop:
 			vm.pop()
+		default:
+			return fmt.Errorf("unknown operator: %d", op)
 		}
 	}
 	return nil
