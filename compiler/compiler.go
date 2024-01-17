@@ -59,6 +59,12 @@ func (c *Compiler) Compile(node ast.Node) error {
 		integer := &object.Integer{Value: node.Value}
 		integer_index := c.addConstant(integer)
 		c.emit(code.Opconst, integer_index)
+	case *ast.BooleanLiteral:
+		if node.Value {
+			c.emit(code.OpTrue)
+		} else {
+			c.emit(code.OpFalse)
+		}
 	}
 	return nil
 }

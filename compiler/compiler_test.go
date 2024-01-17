@@ -12,7 +12,7 @@ import (
 
 type compilerTestCase struct {
 	input                string
-	expectedConstants    []interface{}
+	expectedConstants    []any
 	expectedInstructions []code.Instructions
 }
 
@@ -55,6 +55,22 @@ func TestIntegerArithmetic(t *testing.T) {
 				code.Make(code.Opconst, 0),
 				code.Make(code.Opconst, 1),
 				code.Make(code.OpDiv),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:             "true",
+			expectedConstants: []any{},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpTrue),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:             "false",
+			expectedConstants: []any{},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpFalse),
 				code.Make(code.OpPop),
 			},
 		},
