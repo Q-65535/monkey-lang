@@ -17,6 +17,10 @@ const (
 	OpDiv
 	OpTrue
 	OpFalse
+	OpEqual
+	OpNotEqual
+	OpGreaterThan
+	OpLessThan
 )
 
 type Definition struct {
@@ -50,14 +54,18 @@ func (instructions Instructions) String() string {
 }
 
 var definitions = map[Opcode]*Definition{
-	Opconst: {Name: "opConstant", OperandWidths: []int{2}},
-	OpAdd:   {"OpAdd", []int{}},
-	OpSub:   {"OpSub", []int{}},
-	OpMul:   {"OpMul", []int{}},
-	OpDiv:   {"OpDiv", []int{}},
-	OpPop:   {"OpPop", []int{}},
-	OpTrue:  {"OpTrue", []int{}},
-	OpFalse: {"OpFalse", []int{}},
+	Opconst:       {Name: "opConstant", OperandWidths: []int{2}},
+	OpAdd:         {"OpAdd", []int{}},
+	OpSub:         {"OpSub", []int{}},
+	OpMul:         {"OpMul", []int{}},
+	OpDiv:         {"OpDiv", []int{}},
+	OpPop:         {"OpPop", []int{}},
+	OpTrue:        {"OpTrue", []int{}},
+	OpFalse:       {"OpFalse", []int{}},
+	OpEqual:       {"OpEqual", []int{}},
+	OpNotEqual:    {"OpNotEqual", []int{}},
+	OpGreaterThan: {"OpGreaterThan", []int{}},
+	OpLessThan:    {"OpLessThan", []int{}},
 }
 
 func Make(oc Opcode, oprands ...int) []byte {

@@ -72,6 +72,44 @@ func (vm *VM) Run() error {
 				res = leftVal / rightVal
 			}
 			vm.push(&object.Integer{Value: res})
+		case code.OpEqual, code.OpNotEqual, code.OpGreaterThan, code.OpLessThan:
+			var res bool
+			right := vm.pop()
+			left := vm.pop()
+			if left.Type() != right.Type() {
+				return fmt.Errorf("unsupported types for comparison operation: %s %s", left.Type(), right.Type())
+			}
+			if left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ {
+				leftVal := left.(*object.Integer).Value
+				rightVal := right.(*object.Integer).Value
+				switch op {
+				case code.OpEqual:
+					res = (leftVal == rightVal)
+				case code.OpNotEqual:
+					res = (leftVal != rightVal)
+				case code.OpGreaterThan:
+					res = (leftVal > rightVal)
+				case code.OpLessThan:
+					res = (leftVal < rightVal)
+				}
+			}
+			if left.Type() == object.BOOLEAN_OBJ && right.Type() == object.BOOLEAN_OBJ {
+				leftVal := left.(*object.Boolean).Value
+				rightVal := right.(*object.Boolean).Value
+				switch op {
+				case code.OpEqual:
+					res = (leftVal == rightVal)
+				case code.OpNotEqual:
+					res = (leftVal != rightVal)
+				// @Optimize: this error could be reported at compile time (instead of run time)
+				case code.OpGreaterThan:
+					return fmt.Errorf("unsupported types for > operator: %s %s", left.Type(), right.Type())
+				case code.OpLessThan:
+					return fmt.Errorf("unsupported types for < operator: %s %s", left.Type(), right.Type())
+				}
+			}
+			vm.push(nativeBool2BooleanObject(res))
+
 		case code.OpTrue:
 			err := vm.push(True)
 			if err != nil {
@@ -110,4 +148,12 @@ func (vm *VM) pop() object.Object {
 
 func (vm *VM) LastPopped() object.Object {
 	return vm.lastPopped
+}
+
+func nativeBool2BooleanObject(input bool) *object.Boolean {
+	if input {
+		return True
+	} else {
+		return False
+	}
 }
