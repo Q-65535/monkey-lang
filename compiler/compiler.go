@@ -28,11 +28,22 @@ func (c *Compiler) Compile(node ast.Node) error {
 				return err
 			}
 		}
+	case *ast.BlockStatement:
+		for _, s := range node.Statements {
+			err := c.Compile(s)
+			if err != nil {
+				return err
+			}
+		}
 	case *ast.ExpressionStatement:
 		err := c.Compile(node.Expression)
-		c.emit(code.OpPop)
 		if err != nil {
 			return err
+		}
+		// @Note: this implementation is different from what the book says.
+		_, ok := node.Expression.(*ast.IfExpression)
+		if !ok {
+			c.emit(code.OpPop)
 		}
 	case *ast.InfixExpression:
 		err := c.Compile(node.Left)
@@ -72,6 +83,33 @@ func (c *Compiler) Compile(node ast.Node) error {
 			c.emit(code.OpTrue)
 		} else {
 			c.emit(code.OpFalse)
+		}
+	case *ast.IfExpression:
+		err := c.Compile(node.Condition)
+		if err != nil {
+			return err
+		}
+		c.emit(code.OpJumpNotTruthy, 999)
+		oprandPos := len(c.instructions) - 2 // oprand width is 2
+		// consequence
+		c.Compile(node.Consequence)
+		// jump to execute OpPop
+		// @Problem: what if there is no pop instruction emitted when compiling the consequence?
+		popPos := len(c.instructions) - 1
+		// now modify the jump position
+		c.instructions[oprandPos] = byte((popPos >> 8) & 0xff)
+		c.instructions[oprandPos+1] = byte(popPos & 0xff)
+
+		if node.Altenative != nil {
+			// jump over altenative
+			c.emit(code.OpJump, 999)
+			oprandPos = len(c.instructions) - 2 // oprand width is 2
+			// altenative
+			c.Compile(node.Altenative)
+			popPos = len(c.instructions)
+			// now modify the jump position
+			c.instructions[oprandPos] = byte((popPos >> 8) & 0xff)
+			c.instructions[oprandPos+1] = byte(popPos & 0xff)
 		}
 	}
 	return nil

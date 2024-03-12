@@ -129,6 +129,46 @@ func TestIntegerArithmetic(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+func TestConditionals(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			input:             "if (true) {10;} 3333;",
+			expectedConstants: []any{10, 3333},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpTrue),             // 0000
+				code.Make(code.OpJumpNotTruthy, 7), // 0001
+				code.Make(code.Opconst, 0),         // 0004
+				code.Make(code.OpPop),              // 0007
+				code.Make(code.Opconst, 1),         // 0008
+				code.Make(code.OpPop),              // 000B
+			},
+		},
+		{
+			input:             "if (true) {10} else {20}; 3333;",
+			expectedConstants: []any{10, 3333},
+			expectedInstructions: []code.Instructions{
+				// 0000
+				code.Make(code.OpTrue),
+				// 0001
+				code.Make(code.OpJumpNotTruthy, 10),
+				// 0004
+				code.Make(code.Opconst, 0),
+				// 0007
+				code.Make(code.OpJump, 13),
+				// 0010
+				code.Make(code.Opconst, 1),
+				// 0013
+				code.Make(code.OpPop),
+				// 0014
+				code.Make(code.Opconst, 2),
+				// 0017
+				code.Make(code.OpPop),
+			},
+		},
+	}
+	runCompilerTests(t, tests)
+}
+
 func runCompilerTests(t *testing.T, tests []compilerTestCase) {
 	t.Helper()
 
@@ -160,7 +200,7 @@ func parse(input string) *ast.Program {
 func testInstructions(expected []code.Instructions, actual code.Instructions) error {
 	concatted := concatInstructions(expected)
 	if len(actual) != len(concatted) {
-		return fmt.Errorf("wrong instructions length: want=%q, got=%q", concatted, actual)
+		return fmt.Errorf("wrong instructions length:\n want:\n%s \n got:\n%s", concatted, actual)
 	}
 	for i, ins := range concatted {
 		if actual[i] != ins {
