@@ -145,7 +145,7 @@ func TestConditionals(t *testing.T) {
 		},
 		{
 			input:             "if (true) {10} else {20}; 3333;",
-			expectedConstants: []any{10, 3333},
+			expectedConstants: []any{10, 20, 3333},
 			expectedInstructions: []code.Instructions{
 				// 0000
 				code.Make(code.OpTrue),
@@ -204,7 +204,7 @@ func testInstructions(expected []code.Instructions, actual code.Instructions) er
 	}
 	for i, ins := range concatted {
 		if actual[i] != ins {
-			return fmt.Errorf("wrong instructions at %d: want=%q, got=%q", i, concatted, actual)
+			return fmt.Errorf("wrong instructions at %d\n: want:\n%s \n got:\n%s", i, concatted, actual)
 		}
 	}
 	return nil
@@ -220,7 +220,7 @@ func concatInstructions(instructionsArr []code.Instructions) code.Instructions {
 
 func testConstants(t *testing.T, expected []interface{}, actual []object.Object) error {
 	if len(actual) != len(expected) {
-		return fmt.Errorf("wrong instructions length: want=%q, got=%q", expected, actual)
+		return fmt.Errorf("wrong instructions length: want=%s\n, got=%s\n", expected, actual)
 	}
 	for i, cons := range expected {
 		switch cons := cons.(type) {
