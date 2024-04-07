@@ -250,7 +250,8 @@ func evalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Obje
 	} else if ie.Altenative != nil {
 		return Eval(ie.Altenative, env)
 	} else {
-		return newError("eval condition error, bad condition:  %s",
+		// never happens: since the parser makes sure that the if expression has a non-nil altenative
+		return newError("altenative in ifexpression is nil",
 			condition.Type())
 	}
 }

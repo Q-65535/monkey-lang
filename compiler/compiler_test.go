@@ -165,6 +165,12 @@ func TestConditionals(t *testing.T) {
 				code.Make(code.OpPop),
 			},
 		},
+		// test for null case
+		{
+			input:                "if (false) {10;};",
+			expectedConstants:    []any{10},
+			expectedInstructions: []code.Instructions{},
+		},
 	}
 	runCompilerTests(t, tests)
 }

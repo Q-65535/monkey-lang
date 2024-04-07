@@ -122,11 +122,33 @@ func (vm *VM) Run() error {
 			}
 		case code.OpPop:
 			vm.pop()
+		case code.OpJump:
+			// off set: -1, so the next iteration jumps to the correct position
+			pos := code.ReadUint16(vm.instructions[ip+1:])
+			ip = int(pos - 1)
+		case code.OpJumpNotTruthy:
+			pos := code.ReadUint16(vm.instructions[ip+1:])
+			ip += 2
+			condition := vm.pop()
+			if condition.Type() == object.BOOLEAN_OBJ {
+				c := condition.(*object.Boolean)
+				if c.Value == false {
+					ip = int(pos - 1)
+				}
+			}
 		default:
 			return fmt.Errorf("unknown operator: %d", op)
 		}
 	}
 	return nil
+}
+
+func isTruthy(obj object.Object) bool {
+	if obj.Type() != object.BOOLEAN_OBJ {
+		return true
+	}
+	c := obj.(*object.Boolean)
+	return c.Value
 }
 
 func (vm *VM) push(obj object.Object) error {
