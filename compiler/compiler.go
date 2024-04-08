@@ -50,6 +50,19 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return err
 		}
 		c.emit(code.OpPop)
+	case *ast.PrefixExpression:
+		err := c.Compile(node.Right)
+		if err != nil {
+			return err
+		}
+		switch node.Operator {
+		case "!":
+			c.emit(code.OpBang)
+		case "-":
+			c.emit(code.OpMinus)
+		default:
+			return fmt.Errorf("unknown operator %s", node.Operator)
+		}
 	case *ast.InfixExpression:
 		err := c.Compile(node.Left)
 		if err != nil {
@@ -94,8 +107,8 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if err != nil {
 			return err
 		}
-		jumpNotTruthyPos := c.emit(code.OpJumpNotTruthy, 999)
-		var opPos_alt int
+		ins_jumpNotTruthyPos := c.emit(code.OpJumpNotTruthy, 999)
+		var ins_jumpOverAltPos int
 		// consequence
 		err = c.Compile(node.Consequence)
 		if err != nil {
@@ -104,15 +117,13 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if c.lastInstructionIsPop() {
 			c.removeLastPop()
 		}
-		if node.Altenative != nil {
-			// instruction for jumpping over altenative
-			opPos_alt = c.emit(code.OpJump, 999)
-		}
+		ins_jumpOverAltPos = c.emit(code.OpJump, 999)
 		// now modify the jump position
 		afterConsequencePos := len(c.instructions)
-		c.changeOperand(jumpNotTruthyPos, afterConsequencePos)
-
-		if node.Altenative != nil {
+		c.changeOperand(ins_jumpNotTruthyPos, afterConsequencePos)
+		if node.Altenative == nil || len(node.Altenative.Statements) == 0 {
+			c.emit(code.OpNull)
+		} else {
 			err = c.Compile(node.Altenative)
 			if err != nil {
 				return err
@@ -120,10 +131,10 @@ func (c *Compiler) Compile(node ast.Node) error {
 			if c.lastInstructionIsPop() {
 				c.removeLastPop()
 			}
-			afterAltenativePos := len(c.instructions)
-			// now modify the jump position
-			c.changeOperand(opPos_alt, afterAltenativePos)
 		}
+		// now modify the jump position
+		afterAltenativePos := len(c.instructions)
+		c.changeOperand(ins_jumpOverAltPos, afterAltenativePos)
 	}
 	return nil
 }

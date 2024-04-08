@@ -11,6 +11,7 @@ const StackSize = 2048
 
 var True = &object.Boolean{Value: true}
 var False = &object.Boolean{Value: false}
+var Null = &object.Null{}
 
 type VM struct {
 	constants    []object.Object
@@ -120,6 +121,13 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
+		case code.OpBang:
+			vm.executeBangOperator()
+		case code.OpNull:
+			err := vm.push(Null)
+			if err != nil {
+				return err
+			}
 		case code.OpPop:
 			vm.pop()
 		case code.OpJump:
@@ -130,11 +138,8 @@ func (vm *VM) Run() error {
 			pos := code.ReadUint16(vm.instructions[ip+1:])
 			ip += 2
 			condition := vm.pop()
-			if condition.Type() == object.BOOLEAN_OBJ {
-				c := condition.(*object.Boolean)
-				if c.Value == false {
-					ip = int(pos - 1)
-				}
+			if !isTruthy(condition) {
+				ip = int(pos - 1)
 			}
 		default:
 			return fmt.Errorf("unknown operator: %d", op)
@@ -144,9 +149,15 @@ func (vm *VM) Run() error {
 }
 
 func isTruthy(obj object.Object) bool {
-	if obj.Type() != object.BOOLEAN_OBJ {
+	switch obj := obj.(type) {
+	case *object.Boolean:
+		return obj.Value
+	case *object.Null:
+		return false
+	default:
 		return true
 	}
+
 	c := obj.(*object.Boolean)
 	return c.Value
 }
@@ -166,6 +177,15 @@ func (vm *VM) pop() object.Object {
 	vm.lastPopped = obj
 	vm.sp--
 	return obj
+}
+
+func (vm *VM) executeBangOperator() error {
+	obj := vm.pop()
+	if obj == False || obj == Null {
+		return vm.push(True)
+	} else {
+		return vm.push(False)
+	}
 }
 
 func (vm *VM) LastPopped() object.Object {
