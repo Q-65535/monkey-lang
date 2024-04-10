@@ -15,9 +15,13 @@ type EmittedInstruction struct {
 type Compiler struct {
 	instructions        code.Instructions
 	constants           []object.Object
+	globals             []object.Object
 	lastInstruction     EmittedInstruction
 	previousInstruction EmittedInstruction
+	global_var_index    int
 }
+
+var symbol_table = map[string]int{}
 
 func New() *Compiler {
 	return &Compiler{
@@ -25,6 +29,7 @@ func New() *Compiler {
 		constants:           []object.Object{},
 		lastInstruction:     EmittedInstruction{},
 		previousInstruction: EmittedInstruction{},
+		global_var_index:    0,
 	}
 }
 
@@ -44,6 +49,15 @@ func (c *Compiler) Compile(node ast.Node) error {
 				return err
 			}
 		}
+	case *ast.LetStatement:
+		err := c.Compile(node.Value)
+		if err != nil {
+			return err
+		}
+		c.emit(code.OpSetGlobal, c.global_var_index)
+		symbol_str := node.Name.Value
+		symbol_table[symbol_str] = c.global_var_index
+		c.global_var_index += 1
 	case *ast.ExpressionStatement:
 		err := c.Compile(node.Expression)
 		if err != nil {
@@ -102,6 +116,14 @@ func (c *Compiler) Compile(node ast.Node) error {
 		} else {
 			c.emit(code.OpFalse)
 		}
+	case *ast.Identifier:
+		index, ok := symbol_table[node.Value]
+		if ok {
+			c.emit(code.OpGetGlobal, index)
+		} else {
+			return fmt.Errorf("symbol not found: %s", node.Value)
+		}
+
 	case *ast.IfExpression:
 		err := c.Compile(node.Condition)
 		if err != nil {
