@@ -18,7 +18,7 @@ type Compiler struct {
 	globals             []object.Object
 	lastInstruction     EmittedInstruction
 	previousInstruction EmittedInstruction
-	global_var_index    int
+	symbolTable         *SymbolTable
 }
 
 var symbol_table = map[string]int{}
@@ -29,7 +29,7 @@ func New() *Compiler {
 		constants:           []object.Object{},
 		lastInstruction:     EmittedInstruction{},
 		previousInstruction: EmittedInstruction{},
-		global_var_index:    0,
+		symbolTable:         NewSymbolTable(),
 	}
 }
 
@@ -54,10 +54,8 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if err != nil {
 			return err
 		}
-		c.emit(code.OpSetGlobal, c.global_var_index)
-		symbol_str := node.Name.Value
-		symbol_table[symbol_str] = c.global_var_index
-		c.global_var_index += 1
+		symbol := c.symbolTable.Define(node.Name.Value)
+		c.emit(code.OpSetGlobal, symbol.Index)
 	case *ast.ExpressionStatement:
 		err := c.Compile(node.Expression)
 		if err != nil {
@@ -117,11 +115,11 @@ func (c *Compiler) Compile(node ast.Node) error {
 			c.emit(code.OpFalse)
 		}
 	case *ast.Identifier:
-		index, ok := symbol_table[node.Value]
+		symbol, ok := c.symbolTable.Resolve(node.Value)
 		if ok {
-			c.emit(code.OpGetGlobal, index)
+			c.emit(code.OpGetGlobal, symbol.Index)
 		} else {
-			return fmt.Errorf("symbol not found: %s", node.Value)
+			return fmt.Errorf("undefined variable: %s", node.Value)
 		}
 
 	case *ast.IfExpression:
