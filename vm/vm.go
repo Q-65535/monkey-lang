@@ -8,6 +8,7 @@ import (
 )
 
 const StackSize = 2048
+const GlobalSize = 65536
 
 var True = &object.Boolean{Value: true}
 var False = &object.Boolean{Value: false}
@@ -19,6 +20,7 @@ type VM struct {
 	stack        []object.Object
 	sp           int
 	lastPopped   object.Object
+	globals      []object.Object
 }
 
 func New(bytecode *compiler.Bytecode) *VM {
@@ -27,6 +29,8 @@ func New(bytecode *compiler.Bytecode) *VM {
 		instructions: bytecode.Instructions,
 		stack:        make([]object.Object, StackSize),
 		sp:           0,
+		// @Optimization: we can determine the globalsize at compile time, and reduce the array size
+		globals: make([]object.Object, GlobalSize),
 	}
 }
 
@@ -140,6 +144,18 @@ func (vm *VM) Run() error {
 			condition := vm.pop()
 			if !isTruthy(condition) {
 				ip = int(pos - 1)
+			}
+		case code.OpSetGlobal:
+			index := code.ReadUint16(vm.instructions[ip+1:])
+			ip += 2
+			vm.globals[index] = vm.pop()
+		case code.OpGetGlobal:
+			index := code.ReadUint16(vm.instructions[ip+1:])
+			ip += 2
+			val := vm.globals[index]
+			err := vm.push(val)
+			if err != nil {
+				return err
 			}
 		default:
 			return fmt.Errorf("unknown operator: %d", op)
