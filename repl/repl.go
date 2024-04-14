@@ -7,6 +7,7 @@ import (
 	"monkey/code"
 	"monkey/compiler"
 	"monkey/lexer"
+	"monkey/object"
 	"monkey/parser"
 	"monkey/vm"
 	"os"
@@ -16,6 +17,10 @@ const PROMPT = "> "
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
+	constants := []object.Object{}
+	globals := make([]object.Object, vm.GlobalSize)
+	symbolTable := compiler.NewSymbolTable()
+
 	instruction := code.Make(code.Opconst, 65534)
 	for i, b := range instruction {
 		fmt.Printf("%dth byte: %x\n", i, b)
@@ -33,9 +38,10 @@ func Start(in io.Reader, out io.Writer) {
 		l := lexer.New(line)
 		p := parser.New(l)
 		prog := p.ParseProgram()
-		comp := compiler.New()
+		comp := compiler.NewWithState(symbolTable, constants)
 		comp.Compile(prog)
-		v := vm.New(comp.Bytecode())
+		constants = comp.Bytecode().Constants
+		v := vm.NewWithGlobalsStore(comp.Bytecode(), globals)
 		v.Run()
 
 		// print error messages

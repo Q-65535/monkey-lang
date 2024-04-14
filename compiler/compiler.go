@@ -33,6 +33,13 @@ func New() *Compiler {
 	}
 }
 
+func NewWithState(st *SymbolTable, constants []object.Object) *Compiler {
+	c := New()
+	c.constants = constants
+	c.symbolTable = st
+	return c
+}
+
 func (c *Compiler) Compile(node ast.Node) error {
 	switch node := node.(type) {
 	case *ast.Program:
@@ -121,6 +128,10 @@ func (c *Compiler) Compile(node ast.Node) error {
 		} else {
 			return fmt.Errorf("undefined variable: %s", node.Value)
 		}
+	case *ast.StringLiteral:
+		str := &object.String{Value: node.Value}
+		str_index := c.addConstant(str)
+		c.emit(code.Opconst, str_index)
 
 	case *ast.IfExpression:
 		err := c.Compile(node.Condition)

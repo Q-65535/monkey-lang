@@ -34,6 +34,12 @@ func New(bytecode *compiler.Bytecode) *VM {
 	}
 }
 
+func NewWithGlobalsStore(bytecode *compiler.Bytecode, s []object.Object) *VM {
+	vm := New(bytecode)
+	vm.globals = s
+	return vm
+}
+
 func (vm *VM) StackTop() object.Object {
 	if vm.sp == 0 {
 		return &object.Null{}
@@ -60,23 +66,32 @@ func (vm *VM) Run() error {
 		case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv:
 			right := vm.pop()
 			left := vm.pop()
-			if left.Type() != object.INTEGER_OBJ || right.Type() != object.INTEGER_OBJ {
+			switch {
+			case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
+				leftVal := left.(*object.Integer).Value
+				rightVal := right.(*object.Integer).Value
+				var res int64
+				switch op {
+				case code.OpAdd:
+					res = leftVal + rightVal
+				case code.OpSub:
+					res = leftVal - rightVal
+				case code.OpMul:
+					res = leftVal * rightVal
+				case code.OpDiv:
+					res = leftVal / rightVal
+				}
+				vm.push(&object.Integer{Value: res})
+			case left.Type() == object.STRING_OBJ && right.Type() == object.STRING_OBJ:
+				leftVal := left.(*object.String).Value
+				rightVal := right.(*object.String).Value
+				if op != code.OpAdd {
+					return fmt.Errorf("unsupported operator for string type")
+				}
+				vm.push(&object.String{Value: leftVal + rightVal})
+			default:
 				return fmt.Errorf("unsupported types for binary operation: %s %s", left.Type(), right.Type())
 			}
-			leftVal := left.(*object.Integer).Value
-			rightVal := right.(*object.Integer).Value
-			var res int64
-			switch op {
-			case code.OpAdd:
-				res = leftVal + rightVal
-			case code.OpSub:
-				res = leftVal - rightVal
-			case code.OpMul:
-				res = leftVal * rightVal
-			case code.OpDiv:
-				res = leftVal / rightVal
-			}
-			vm.push(&object.Integer{Value: res})
 		case code.OpEqual, code.OpNotEqual, code.OpGreaterThan, code.OpLessThan:
 			var res bool
 			right := vm.pop()
