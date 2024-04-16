@@ -172,6 +172,19 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
+		case code.OpArray:
+			oprand := code.ReadUint16(vm.instructions[ip+1:])
+			count := int(oprand)
+			ip += 2
+			elements := make([]object.Object, count)
+			for i := 0; i < count; i++ {
+				elements[count-1-i] = vm.pop()
+			}
+			array_obj := object.Array{Value: elements}
+			err := vm.push(&array_obj)
+			if err != nil {
+				return err
+			}
 		default:
 			return fmt.Errorf("unknown operator: %d", op)
 		}

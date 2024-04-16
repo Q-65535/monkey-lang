@@ -132,7 +132,6 @@ func (c *Compiler) Compile(node ast.Node) error {
 		str := &object.String{Value: node.Value}
 		str_index := c.addConstant(str)
 		c.emit(code.Opconst, str_index)
-
 	case *ast.IfExpression:
 		err := c.Compile(node.Condition)
 		if err != nil {
@@ -166,6 +165,14 @@ func (c *Compiler) Compile(node ast.Node) error {
 		// now modify the jump position
 		afterAltenativePos := len(c.instructions)
 		c.changeOperand(ins_jumpOverAltPos, afterAltenativePos)
+	case *ast.ArrayLiteral:
+		for _, el := range node.Elements {
+			err := c.Compile(el)
+			if err != nil {
+				return err
+			}
+		}
+		c.emit(code.OpArray, len(node.Elements))
 	}
 	return nil
 }
