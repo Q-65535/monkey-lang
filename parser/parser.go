@@ -66,6 +66,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
 	p.registerPrefix(token.STRING, p.parseStringLiteral)
 	p.registerPrefix(token.LBRACKET, p.parseArrayLiteral)
+	p.registerPrefix(token.LBRACE, p.parseHashLiteral)
 
 	// register infix parsing functions
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
@@ -400,6 +401,27 @@ func (p *Parser) parseArrayLiteral() ast.Expression {
 		p.addError("parsing array literal error, expect ] as the end of exrepssion, but got %s\n", p.peekToken)
 	}
 	return arr
+}
+
+func (p *Parser) parseHashLiteral() ast.Expression {
+	hash := &ast.HashLiteral{Token: p.curToken, Pairs: make(map[ast.Expression]ast.Expression)}
+	for !p.peekTokenIs(token.RBRACE) {
+		p.nextToken()
+		key := p.parseExpression(LOWEST)
+		if !p.expectPeek(token.COLON) {
+			p.addError("parsing hash literal error, expect colon token ':' , but got %s\n", p.peekToken)
+		}
+		p.nextToken()
+		val := p.parseExpression(LOWEST)
+		hash.Pairs[key] = val
+		// skip comma if it exists
+		if p.peekTokenIs(token.COMMA) {
+			p.nextToken()
+		}
+	}
+	// skip '{'
+	p.nextToken()
+	return hash
 }
 
 func (p *Parser) parseArrayAccessExpression(left ast.Expression) ast.Expression {

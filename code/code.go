@@ -29,6 +29,7 @@ const (
 	OpGetGlobal
 	OpSetGlobal
 	OpArray
+	OpHash
 )
 
 type Definition struct {
@@ -82,6 +83,7 @@ var definitions = map[Opcode]*Definition{
 	OpGetGlobal:     {"OpGetGlobal", []int{2}},
 	OpSetGlobal:     {"OpSetGlobal", []int{2}},
 	OpArray:         {"OPArray", []int{2}},
+	OpHash:          {"OPHash", []int{2}},
 }
 
 func Make(oc Opcode, oprands ...int) []byte {

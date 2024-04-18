@@ -151,6 +151,10 @@ type Array struct {
 	Value []Object
 }
 
+type Hash struct {
+	Pairs map[Object]Object
+}
+
 func (a *Array) Type() ObjectType {
 	return ARRAY_OBJ
 }
