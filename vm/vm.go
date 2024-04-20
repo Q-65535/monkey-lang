@@ -185,6 +185,19 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
+		case code.OpIndex:
+			index := vm.pop()
+			arr := vm.pop()
+			if arr.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ {
+				i := index.(*object.Integer).Value
+				a := arr.(*object.Array).Value
+				err := vm.push(a[i])
+				if err != nil {
+					return err
+				}
+			} else {
+				return fmt.Errorf("we currently only support array access, expect ARRAY_OBJ and INTEGER_OBJ types, but got %s, %s", arr.Type(), index.Type())
+			}
 		default:
 			return fmt.Errorf("unknown operator: %d", op)
 		}

@@ -173,6 +173,16 @@ func (c *Compiler) Compile(node ast.Node) error {
 			}
 		}
 		c.emit(code.OpArray, len(node.Elements))
+	case *ast.ArrayAccessExpression:
+		err := c.Compile(node.Array)
+		if err != nil {
+			return err
+		}
+		err = c.Compile(node.Index)
+		if err != nil {
+			return err
+		}
+		c.emit(code.OpIndex)
 	}
 	return nil
 }
