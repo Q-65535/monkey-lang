@@ -35,6 +35,7 @@ func New() *Compiler {
 
 func NewWithState(st *SymbolTable, constants []object.Object) *Compiler {
 	c := New()
+	// @Optimize: this copying is not efficient, we can use address instead
 	c.constants = constants
 	c.symbolTable = st
 	return c
@@ -56,6 +57,24 @@ func (c *Compiler) Compile(node ast.Node) error {
 				return err
 			}
 		}
+	case *ast.FunctionLiteral:
+		c_func := NewWithState(c.symbolTable, c.constants)
+		err := c_func.Compile(node.Body)
+		if err != nil {
+			return err
+		}
+		// constants should be moved back
+		// @Optimize: this copying is not efficient, we can use address instead
+		c.constants = c_func.constants
+		compiledFunc := &object.CompiledFunction{Instructions: c_func.instructions}
+		index := c.addConstant(compiledFunc)
+		c.emit(code.Opconst, index)
+	case *ast.ReturnStatement:
+		err := c.Compile(node.ReturnValue)
+		if err != nil {
+			return err
+		}
+		c.emit(code.OpReturnValue)
 	case *ast.LetStatement:
 		err := c.Compile(node.Value)
 		if err != nil {
