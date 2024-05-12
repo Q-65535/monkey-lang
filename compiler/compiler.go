@@ -63,7 +63,15 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if err != nil {
 			return err
 		}
-		// constants should be moved back
+		// @Problem: what if the last instruction is a let statement?
+		if c_func.lastInstructionIsPop() {
+			c_func.removeLastPop()
+			c_func.emit(code.OpReturnValue)
+		}
+		if !c_func.lastInstructionIsReturnValue() {
+			c_func.emit(code.OpReturn)
+		}
+		// constants is moved back
 		// @Optimize: this copying is not efficient, we can use address instead
 		c.constants = c_func.constants
 		compiledFunc := &object.CompiledFunction{Instructions: c_func.instructions}
@@ -82,6 +90,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 		symbol := c.symbolTable.Define(node.Name.Value)
 		c.emit(code.OpSetGlobal, symbol.Index)
+	// @TODO: we need an assignment statement
 	case *ast.ExpressionStatement:
 		err := c.Compile(node.Expression)
 		if err != nil {
@@ -227,6 +236,10 @@ func (c *Compiler) addInstruction(ins []byte) int {
 
 func (c *Compiler) lastInstructionIsPop() bool {
 	return c.lastInstruction.Opcode == code.OpPop
+}
+
+func (c *Compiler) lastInstructionIsReturnValue() bool {
+	return c.lastInstruction.Opcode == code.OpReturnValue
 }
 
 func (c *Compiler) removeLastPop() {
