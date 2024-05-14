@@ -71,7 +71,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if !c_func.lastInstructionIsReturnValue() {
 			c_func.emit(code.OpReturn)
 		}
-		// constants is moved back
+		// constants are moved back
 		// @Optimize: this copying is not efficient, we can use address instead
 		c.constants = c_func.constants
 		compiledFunc := &object.CompiledFunction{Instructions: c_func.instructions}
@@ -83,6 +83,12 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return err
 		}
 		c.emit(code.OpReturnValue)
+	case *ast.CallExpression:
+		err := c.Compile(node.Function)
+		if err != nil {
+			return err
+		}
+		c.emit(code.OpCall)
 	case *ast.LetStatement:
 		err := c.Compile(node.Value)
 		if err != nil {
