@@ -15,11 +15,17 @@ type Symbol struct {
 type SymbolTable struct {
 	store          map[string]Symbol
 	numDefinitions int
+	upper          *SymbolTable
 }
 
 func NewSymbolTable() *SymbolTable {
 	s := make(map[string]Symbol)
 	return &SymbolTable{store: s}
+}
+
+func NewSymbolTableWithUpper(upper *SymbolTable) *SymbolTable {
+	s := make(map[string]Symbol)
+	return &SymbolTable{store: s, upper: upper}
 }
 
 func (s *SymbolTable) Define(name string) Symbol {
@@ -30,6 +36,23 @@ func (s *SymbolTable) Define(name string) Symbol {
 }
 
 func (s *SymbolTable) Resolve(name string) (Symbol, bool) {
+	sbl, ok := s.store[name]
+	if !ok && s.upper != nil {
+		return s.upper.Resolve(name)
+	}
+	return sbl, ok
+}
+
+func (s *SymbolTable) ResolveGlobal(name string) (Symbol, bool) {
+	globalSymbolTable := s
+	for globalSymbolTable.upper != nil {
+		globalSymbolTable = globalSymbolTable.upper
+	}
+	sbl, ok := globalSymbolTable.store[name]
+	return sbl, ok
+}
+
+func (s *SymbolTable) ResolveLocal(name string) (Symbol, bool) {
 	sbl, ok := s.store[name]
 	return sbl, ok
 }

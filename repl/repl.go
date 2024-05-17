@@ -39,7 +39,7 @@ func Start(in io.Reader, out io.Writer) {
 		p := parser.New(l)
 		prog := p.ParseProgram()
 		comp := compiler.NewWithState(symbolTable, constants)
-		comp.Compile(prog)
+		comp.Compile(prog, 0)
 		constants = comp.Bytecode().Constants
 		v := vm.NewWithGlobalsStore(comp.Bytecode(), globals)
 		v.Run()

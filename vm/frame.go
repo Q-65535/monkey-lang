@@ -6,8 +6,9 @@ import (
 )
 
 type Frame struct {
-	fn *object.CompiledFunction
-	ip int
+	fn     *object.CompiledFunction
+	ip     int
+	locals []object.Object
 }
 
 func NewFrame(fn *object.CompiledFunction) *Frame {

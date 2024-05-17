@@ -60,7 +60,7 @@ func runVmTests(t *testing.T, tests []vmTestCase) {
 	for _, tt := range tests {
 		program := parse(tt.input)
 		comp := compiler.New()
-		err := comp.Compile(program)
+		err := comp.Compile(program, 0)
 		if err != nil {
 			t.Fatalf("compiler error: %s", err)
 		}

@@ -19,6 +19,7 @@ type Compiler struct {
 	lastInstruction     EmittedInstruction
 	previousInstruction EmittedInstruction
 	symbolTable         *SymbolTable
+	curSymbolTable      *SymbolTable
 }
 
 var symbol_table = map[string]int{}
@@ -41,25 +42,26 @@ func NewWithState(st *SymbolTable, constants []object.Object) *Compiler {
 	return c
 }
 
-func (c *Compiler) Compile(node ast.Node) error {
+func (c *Compiler) Compile(node ast.Node, depth int) error {
 	switch node := node.(type) {
 	case *ast.Program:
 		for _, s := range node.Statements {
-			err := c.Compile(s)
+			err := c.Compile(s, depth)
 			if err != nil {
 				return err
 			}
 		}
 	case *ast.BlockStatement:
 		for _, s := range node.Statements {
-			err := c.Compile(s)
+			err := c.Compile(s, depth)
 			if err != nil {
 				return err
 			}
 		}
 	case *ast.FunctionLiteral:
 		c_func := NewWithState(c.symbolTable, c.constants)
-		err := c_func.Compile(node.Body)
+		c_func.symbolTable = NewSymbolTableWithUpper(c.symbolTable)
+		err := c_func.Compile(node.Body, depth+1)
 		if err != nil {
 			return err
 		}
@@ -78,33 +80,58 @@ func (c *Compiler) Compile(node ast.Node) error {
 		index := c.addConstant(compiledFunc)
 		c.emit(code.Opconst, index)
 	case *ast.ReturnStatement:
-		err := c.Compile(node.ReturnValue)
+		err := c.Compile(node.ReturnValue, depth)
 		if err != nil {
 			return err
 		}
 		c.emit(code.OpReturnValue)
 	case *ast.CallExpression:
-		err := c.Compile(node.Function)
+		err := c.Compile(node.Function, depth)
 		if err != nil {
 			return err
 		}
 		c.emit(code.OpCall)
 	case *ast.LetStatement:
-		err := c.Compile(node.Value)
+		err := c.Compile(node.Value, depth)
 		if err != nil {
 			return err
 		}
+		_, ok := c.symbolTable.Resolve(node.Name.Value)
+		if ok {
+			return fmt.Errorf("%s is already defined", node.Name.Value)
+		}
 		symbol := c.symbolTable.Define(node.Name.Value)
-		c.emit(code.OpSetGlobal, symbol.Index)
+		var opcode code.Opcode
+		if depth == 0 {
+			opcode = code.OpSetGlobal
+		} else {
+			opcode = code.OpSetLocal
+		}
+		c.emit(opcode, symbol.Index)
+	case *ast.Identifier:
+		symbol, ok := c.symbolTable.ResolveGlobal(node.Value)
+		var opcode code.Opcode
+		if ok {
+			opcode = code.OpGetGlobal
+			c.emit(opcode, symbol.Index)
+		} else {
+			symbol, ok = c.symbolTable.Resolve(node.Value)
+			if ok {
+				opcode = code.OpGetLocal
+				c.emit(opcode, symbol.Index)
+			} else {
+				return fmt.Errorf("undefined variable: %s", node.Value)
+			}
+		}
 	// @TODO: we need an assignment statement
 	case *ast.ExpressionStatement:
-		err := c.Compile(node.Expression)
+		err := c.Compile(node.Expression, depth)
 		if err != nil {
 			return err
 		}
 		c.emit(code.OpPop)
 	case *ast.PrefixExpression:
-		err := c.Compile(node.Right)
+		err := c.Compile(node.Right, depth)
 		if err != nil {
 			return err
 		}
@@ -117,11 +144,11 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return fmt.Errorf("unknown operator %s", node.Operator)
 		}
 	case *ast.InfixExpression:
-		err := c.Compile(node.Left)
+		err := c.Compile(node.Left, depth)
 		if err != nil {
 			return err
 		}
-		err = c.Compile(node.Right)
+		err = c.Compile(node.Right, depth)
 		if err != nil {
 			return err
 		}
@@ -155,26 +182,19 @@ func (c *Compiler) Compile(node ast.Node) error {
 		} else {
 			c.emit(code.OpFalse)
 		}
-	case *ast.Identifier:
-		symbol, ok := c.symbolTable.Resolve(node.Value)
-		if ok {
-			c.emit(code.OpGetGlobal, symbol.Index)
-		} else {
-			return fmt.Errorf("undefined variable: %s", node.Value)
-		}
 	case *ast.StringLiteral:
 		str := &object.String{Value: node.Value}
 		str_index := c.addConstant(str)
 		c.emit(code.Opconst, str_index)
 	case *ast.IfExpression:
-		err := c.Compile(node.Condition)
+		err := c.Compile(node.Condition, depth)
 		if err != nil {
 			return err
 		}
 		ins_jumpNotTruthyPos := c.emit(code.OpJumpNotTruthy, 999)
 		var ins_jumpOverAltPos int
 		// consequence
-		err = c.Compile(node.Consequence)
+		err = c.Compile(node.Consequence, depth)
 		if err != nil {
 			return err
 		}
@@ -188,7 +208,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if node.Altenative == nil || len(node.Altenative.Statements) == 0 {
 			c.emit(code.OpNull)
 		} else {
-			err = c.Compile(node.Altenative)
+			err = c.Compile(node.Altenative, depth)
 			if err != nil {
 				return err
 			}
@@ -201,18 +221,18 @@ func (c *Compiler) Compile(node ast.Node) error {
 		c.changeOperand(ins_jumpOverAltPos, afterAltenativePos)
 	case *ast.ArrayLiteral:
 		for _, el := range node.Elements {
-			err := c.Compile(el)
+			err := c.Compile(el, depth)
 			if err != nil {
 				return err
 			}
 		}
 		c.emit(code.OpArray, len(node.Elements))
 	case *ast.ArrayAccessExpression:
-		err := c.Compile(node.Array)
+		err := c.Compile(node.Array, depth)
 		if err != nil {
 			return err
 		}
-		err = c.Compile(node.Index)
+		err = c.Compile(node.Index, depth)
 		if err != nil {
 			return err
 		}

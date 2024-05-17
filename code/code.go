@@ -28,6 +28,8 @@ const (
 	OpJump
 	OpGetGlobal
 	OpSetGlobal
+	OpGetLocal
+	OpSetLocal
 	OpArray
 	OpIndex
 	OpHash
@@ -86,6 +88,8 @@ var definitions = map[Opcode]*Definition{
 	OpJump:          {"OpJump", []int{2}},
 	OpGetGlobal:     {"OpGetGlobal", []int{2}},
 	OpSetGlobal:     {"OpSetGlobal", []int{2}},
+	OpGetLocal:      {"OpGetLocal", []int{1}},
+	OpSetLocal:      {"OpSetLocal", []int{1}},
 	OpArray:         {"OPArray", []int{2}},
 	OpIndex:         {"OpIndex", []int{2}},
 	OpHash:          {"OPHash", []int{2}},
