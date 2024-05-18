@@ -19,7 +19,6 @@ type Compiler struct {
 	lastInstruction     EmittedInstruction
 	previousInstruction EmittedInstruction
 	symbolTable         *SymbolTable
-	curSymbolTable      *SymbolTable
 }
 
 var symbol_table = map[string]int{}
@@ -102,27 +101,24 @@ func (c *Compiler) Compile(node ast.Node, depth int) error {
 		}
 		symbol := c.symbolTable.Define(node.Name.Value)
 		var opcode code.Opcode
-		if depth == 0 {
+		if symbol.Scope == GlobalScope {
 			opcode = code.OpSetGlobal
 		} else {
 			opcode = code.OpSetLocal
 		}
 		c.emit(opcode, symbol.Index)
 	case *ast.Identifier:
-		symbol, ok := c.symbolTable.ResolveGlobal(node.Value)
+		symbol, ok := c.symbolTable.Resolve(node.Value)
 		var opcode code.Opcode
-		if ok {
-			opcode = code.OpGetGlobal
-			c.emit(opcode, symbol.Index)
-		} else {
-			symbol, ok = c.symbolTable.Resolve(node.Value)
-			if ok {
-				opcode = code.OpGetLocal
-				c.emit(opcode, symbol.Index)
-			} else {
-				return fmt.Errorf("undefined variable: %s", node.Value)
-			}
+		if !ok {
+			return fmt.Errorf("undefined variable: %s", node.Value)
 		}
+		if symbol.Scope == GlobalScope {
+			opcode = code.OpGetGlobal
+		} else {
+			opcode = code.OpGetLocal
+		}
+		c.emit(opcode, symbol.Index)
 	// @TODO: we need an assignment statement
 	case *ast.ExpressionStatement:
 		err := c.Compile(node.Expression, depth)

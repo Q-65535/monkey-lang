@@ -4,6 +4,7 @@ type SymbolScope string
 
 const (
 	GlobalScope SymbolScope = "GLOBAL"
+	LocalScope  SymbolScope = "LOCAL"
 )
 
 type Symbol struct {
@@ -24,12 +25,19 @@ func NewSymbolTable() *SymbolTable {
 }
 
 func NewSymbolTableWithUpper(upper *SymbolTable) *SymbolTable {
-	s := make(map[string]Symbol)
-	return &SymbolTable{store: s, upper: upper}
+	s := NewSymbolTable()
+	s.upper = upper
+	return s
 }
 
 func (s *SymbolTable) Define(name string) Symbol {
-	sbl := Symbol{Name: name, Scope: GlobalScope, Index: s.numDefinitions}
+	var scope SymbolScope
+	if s.upper == nil {
+		scope = GlobalScope
+	} else {
+		scope = LocalScope
+	}
+	sbl := Symbol{Name: name, Scope: scope, Index: s.numDefinitions}
 	s.numDefinitions += 1
 	s.store[sbl.Name] = sbl
 	return sbl
